@@ -218,7 +218,12 @@ var Game = {
             var distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < this.player.radius + this.balls[ball].radius) {
-               alert("collision detected " + this.balls.length + ' balls in play')
+               alert("Final score: " + this.balls.length);
+               this.balls = [];
+               this.player.accelX = 0;
+               this.player.accelY = 0;
+               
+               break;
     
             }
 
