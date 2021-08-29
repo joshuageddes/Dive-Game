@@ -2,6 +2,22 @@ function rand(min, max) {
     return Math.random() * (max - min) + min;
   }
 
+  function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for(let i = 0; i <ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  }
+
 
 var Player = {
     new:function(){
@@ -21,13 +37,20 @@ var Player = {
 };
 
 var Ball = {
-    new:function(x, y, radius, velocityX, velocityY){
+    new:function(path, x, y, radius, velocityX, velocityY, color, maxVelocity){
         return{
+            path: path,
             radius: radius,
             x: x,
             y: y,
             velocityX: velocityX,
             velocityY: velocityY,
+            accelX : 0,
+            accelY : 0,
+            color : color,
+            maxVelocity : maxVelocity,
+            angle : 0
+            
 
 
 
@@ -49,6 +72,10 @@ var Game = {
         this.canvas.height = 500;
         this.canvas.width = 500;
 
+        this.date = new Date();
+
+        
+
         
 
 
@@ -57,12 +84,16 @@ var Game = {
         this.balls = []
 
 
+        
+
+
 
         //Loop
 
         setInterval(() => {Dive.addBall();}, 3000)
+
         
-        //setInterval(Dive.addBall, this, 3000);
+        
 
         
         Dive.loop();
@@ -74,12 +105,37 @@ var Game = {
 
     addBall:function(){
 
+        color = "red";
+        path = "line";
+        maxVelocity = 3;
+
+        velocityX = rand(0.5, 3);
+        velocityY = rand(0.5, 3);
+
+        if (this.balls.length % 4 === 0 && this.balls.length != 0) {
+            color = "green";
+            path = "rebound";
+            maxVelocity = 4.5;
+
+            velocityX = rand(2, 4.5);
+            velocityY = rand(2, 4.5);
+        }
+
+
+
+        if (this.balls.length % 9 === 0 && this.balls.length != 0) {
+            color = "blue";
+            path = "seek";
+            maxVelocity = 3.5;
+
+            
+        }
+
         radius = rand(5.5, 8);
         x = rand(radius, this.canvas.width-radius);
         y = rand(radius, this.canvas.height-radius);
 
-        velocityX = rand(0.5, 4);
-        velocityY = rand(0.5, 4);
+        
 
         positions = [[radius, y], [x, radius], [this.canvas.width-radius, y], [x, this.canvas.height-radius]];
 
@@ -87,7 +143,7 @@ var Game = {
 
         
 
-        this.balls.push(Ball.new.call(this, position[0], position[1], radius, velocityX, velocityY));
+        this.balls.push(Ball.new.call(this, path, position[0], position[1], radius, velocityX, velocityY, color, maxVelocity));
 
         
 
@@ -105,12 +161,210 @@ var Game = {
 
     update:function(){
 
+        document.getElementById("score").innerHTML = "Current Score : " + this.balls.length;
+
+
+        
+
+        
+
+        
+
+
+
+
+        for (ball in this.balls){
+            //collision
+        var dx = (this.player.x + this.player.velocityX) - (this.balls[ball].x + this.balls[ball].velocityX) ;
+        var dy = (this.player.y + this.player.velocityY)  - (this.balls[ball].y + this.balls[ball].velocityY) ;
+
+
+
+        
+        
+        var distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < this.player.radius + this.balls[ball].radius) {
+           alert("Final score: " + this.balls.length);
+
+           
+
+           if (document.cookie === ""){
+               
+            document.cookie = "highscore=" + String(this.balls.length);
+
+            
+           
+            console.log(getCookie('highscore'));
+
+           } else if (this.balls.length > Number(document.cookie.substring(10))){
+            document.cookie = "highscore=" + this.balls.length;
+
+           }
+
+           document.getElementById("highscore").innerHTML = "High Score : " + document.cookie.substring(10);
+
+
+
+           
+
+           
+           this.balls = [];
+           this.player.accelX = 0;
+           this.player.accelY = 0;
+           
+           break;
+
+        }
+
+        //Angle
+
+        this.balls[ball].angle = Math.atan(dy/dx)
+        var targetVelocity = Math.sqrt(this.balls[ball].velocityX**2 + this.balls[ball].velocityY**2)
+
+
+
+
+            if (this.balls[ball].y + this.balls[ball].velocityY < this.balls[ball].radius) {
+
+                this.balls[ball].y = this.balls[ball].radius -this.balls[ball].velocityY
+
+                if (this.balls[ball].path === "rebound"){
+
+                    this.balls[ball].velocityX = targetVelocity * Math.abs(Math.cos(this.balls[ball].angle)) * Math.sign(this.player.x-this.balls[ball].x)
+                    this.balls[ball].velocityY = targetVelocity * Math.abs(Math.sin(this.balls[ball].angle)) * Math.sign(this.player.y-this.balls[ball].y)
+
+                }else{
+                    
+                    this.balls[ball].velocityY = -this.balls[ball].velocityY
+                }
+
+                
+                //this.balls[ball].velocityY += 2
+                //this.balls[ball].accelY = -this.balls[ball].accelY
+
+                
+                
+                
+                 
+            }
+    
+            if (this.balls[ball].y+this.balls[ball].velocityY > this.canvas.height-this.balls[ball].radius) {
+
+                this.balls[ball].velocityY = -this.balls[ball].velocityY
+
+                if (this.balls[ball].path === "rebound"){
+                    
+                    this.balls[ball].velocityX = targetVelocity * Math.abs(Math.cos(this.balls[ball].angle)) * Math.sign(this.player.x-this.balls[ball].x)
+                    this.balls[ball].velocityY = targetVelocity * Math.abs(Math.sin(this.balls[ball].angle)) * Math.sign(this.player.y-this.balls[ball].y)
+
+                }else{
+                this.balls[ball].y = this.canvas.height-this.balls[ball].radius -this.balls[ball].velocityY
+                
+                }
+                //this.balls[ball].velocityY -= 2
+                //this.balls[ball].accelY = -this.balls[ball].accelY
+                
+                 
+            }
+    
+            if (this.balls[ball].x + this.balls[ball].velocityX < this.balls[ball].radius) {
+                this.balls[ball].velocityX = -this.balls[ball].velocityX
+
+                if (this.balls[ball].path === "rebound"){
+                    
+                    this.balls[ball].velocityX = targetVelocity * Math.abs(Math.cos(this.balls[ball].angle)) * Math.sign(this.player.x-this.balls[ball].x)
+                    this.balls[ball].velocityY = targetVelocity * Math.abs(Math.sin(this.balls[ball].angle)) * Math.sign(this.player.y-this.balls[ball].y)
+
+                }else{
+                this.balls[ball].x = this.balls[ball].radius -this.balls[ball].velocityX
+                
+                }
+                //this.balls[ball].velocityX +=2
+               // this.balls[ball].accelX = -this.balls[ball].accelX /2
+                
+            }
+    
+            if (this.balls[ball].x+this.balls[ball].velocityX > this.canvas.width-this.balls[ball].radius) {
+                this.balls[ball].velocityX = -this.balls[ball].velocityX
+                if (this.balls[ball].path === "rebound"){
+                    
+                    this.balls[ball].velocityX = targetVelocity * Math.abs(Math.cos(this.balls[ball].angle)) * Math.sign(this.player.x-this.balls[ball].x)
+                    this.balls[ball].velocityY = targetVelocity * Math.abs(Math.sin(this.balls[ball].angle)) * Math.sign(this.player.y-this.balls[ball].y)
+
+                }else{
+                this.balls[ball].x = this.canvas.width-this.balls[ball].radius -this.balls[ball].velocityX
+                
+                }
+                //this.balls[ball].velocityX -=2
+                //this.balls[ball].accelX = -this.balls[ball].accelX /2
+                
+                 
+            }
+
+
+            if (this.balls[ball].path === "seek") {
+
+                this.balls[ball].accelX +=  0.05 * Math.sign(this.player.x-this.balls[ball].x)
+                this.balls[ball].accelY +=  0.05 * Math.sign(this.player.y-this.balls[ball].y)
+                this.balls[ball].velocityX +=  1 * Math.sign(this.player.x-this.balls[ball].x)
+                this.balls[ball].velocityY +=  1 * Math.sign(this.player.y-this.balls[ball].y)
+
+                
+
+                
+
+                /* if (Math.abs(this.balls[ball].accelX) > this.balls[ball].maxAccel) {
+                    this.balls[ball].accelX = this.balls[ball].maxAccel * Math.sign(this.balls[ball].accelX)
+                    
+        
+                }
+        
+                if (Math.abs(this.balls[ball].accelY) > this.balls[ball].maxAccel) {
+                    this.balls[ball].accelY = this.balls[ball].maxAccel * Math.sign(this.balls[ball].accelY)
+                    
+        
+                } */
+
+                
+            }
+
+
+
+            this.balls[ball].velocityX += this.balls[ball].accelX
+            this.balls[ball].velocityY += this.balls[ball].accelY
+
+            if (Math.abs(this.balls[ball].velocityX) > this.balls[ball].maxVelocity) {
+                this.balls[ball].velocityX = this.balls[ball].maxVelocity * Math.sign(this.balls[ball].velocityX)
+                
+    
+            }
+    
+            if (Math.abs(this.balls[ball].velocityY) > this.balls[ball].maxVelocity) {
+                this.balls[ball].velocityY = this.balls[ball].maxVelocity * Math.sign(this.balls[ball].velocityY)
+                
+    
+            }
+
+            this.balls[ball].x += this.balls[ball].velocityX
+            this.balls[ball].y += this.balls[ball].velocityY
+
+           /*  if (this.date.getTime() - this.balls[ball].timeCreated > this.balls[ball].lifetime) {
+                this.balls.splice(ball, 1);
+            } */
+
+
+            
+
+        }
+
+
         //Border Collision
         if (this.player.y + this.player.velocityY < this.player.radius) {
 
             this.player.y = this.player.radius -this.player.velocityY
             this.player.velocityY = -this.player.velocityY
-            this.player.accelY += 2
+            this.player.velocityY += 2
             
              
         }
@@ -118,20 +372,20 @@ var Game = {
         if (this.player.y+this.player.velocityY > this.canvas.height-this.player.radius) {
             this.player.y = this.canvas.height-this.player.radius -this.player.velocityY
             this.player.velocityY = -this.player.velocityY
-            this.player.accelY -= 2
+            this.player.velocityY -= 2
              
         }
 
         if (this.player.x + this.player.velocityX < this.player.radius) {
             this.player.x = this.player.radius -this.player.velocityX
             this.player.velocityX = -this.player.velocityX
-            this.player.accelX +=2
+            this.player.velocityX +=2
         }
 
         if (this.player.x+this.player.velocityX > this.canvas.width-this.player.radius) {
             this.player.x = this.canvas.width-this.player.radius -this.player.velocityX
             this.player.velocityX = -this.player.velocityX
-            this.player.accelX -=2
+            this.player.velocityX -=2
              
         }
 
@@ -172,64 +426,6 @@ var Game = {
         this.player.y += this.player.velocityY
 
 
-
-
-        for (ball in this.balls){
-
-            if (this.balls[ball].y + this.balls[ball].velocityY < this.balls[ball].radius) {
-
-                this.balls[ball].y = this.balls[ball].radius -this.balls[ball].velocityY
-                this.balls[ball].velocityY = -this.balls[ball].velocityY
-                
-                
-                 
-            }
-    
-            if (this.balls[ball].y+this.balls[ball].velocityY > this.canvas.height-this.balls[ball].radius) {
-                this.balls[ball].y = this.canvas.height-this.balls[ball].radius -this.balls[ball].velocityY
-                this.balls[ball].velocityY = -this.balls[ball].velocityY
-                
-                 
-            }
-    
-            if (this.balls[ball].x + this.balls[ball].velocityX < this.balls[ball].radius) {
-                this.balls[ball].x = this.balls[ball].radius -this.balls[ball].velocityX
-                this.balls[ball].velocityX = -this.balls[ball].velocityX
-                
-            }
-    
-            if (this.balls[ball].x+this.balls[ball].velocityX > this.canvas.width-this.balls[ball].radius) {
-                this.balls[ball].x = this.canvas.width-this.balls[ball].radius -this.balls[ball].velocityX
-                this.balls[ball].velocityX = -this.balls[ball].velocityX
-                
-                 
-            }
-
-
-
-
-            this.balls[ball].x += this.balls[ball].velocityX
-            this.balls[ball].y += this.balls[ball].velocityY
-
-
-            //collision
-            var dx = this.player.x - this.balls[ball].x;
-            var dy = this.player.y - this.balls[ball].y;
-            var distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < this.player.radius + this.balls[ball].radius) {
-               alert("Final score: " + this.balls.length);
-               this.balls = [];
-               this.player.accelX = 0;
-               this.player.accelY = 0;
-               
-               break;
-    
-            }
-
-        }
-
-
         
         
 
@@ -265,7 +461,7 @@ var Game = {
             
             this.ctx.beginPath();
             this.ctx.arc(this.balls[ball].x, this.balls[ball].y, this.balls[ball].radius, 0, Math.PI*2, false);
-            this.ctx.fillStyle = "red";
+            this.ctx.fillStyle = this.balls[ball].color;
             this.ctx.fill();
             this.ctx.lineWidth = 1;
             this.ctx.strokeStyle = 'black';
