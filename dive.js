@@ -191,18 +191,18 @@ var Game = {
 
            if (document.cookie === ""){
                
-            document.cookie = "highscore=" + String(this.balls.length);
+            document.cookie = "highscore=" + String(this.balls.length) + ";max-age=31536000";
 
             
            
-            console.log(getCookie('highscore'));
+            
 
-           } else if (this.balls.length > Number(document.cookie.substring(10))){
-            document.cookie = "highscore=" + this.balls.length;
+           } else if (this.balls.length > Number(getCookie('highscore'))){
+            document.cookie = "highscore=" + String(this.balls.length) + ";max-age=31536000";
 
            }
 
-           document.getElementById("highscore").innerHTML = "High Score : " + document.cookie.substring(10);
+           document.getElementById("highscore").innerHTML = "High Score : " + getCookie('highscore');
 
 
 
@@ -525,6 +525,6 @@ var Game = {
 
 
 
-
+document.getElementById("highscore").innerHTML = "High Score : " + getCookie('highscore');
 var Dive = Object.assign({}, Game);
 Dive.init();
